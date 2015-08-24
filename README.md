@@ -41,13 +41,13 @@ In particular use the `--no_cuda` option to work in CPU mode.
 
 | Method | Accuracy |
 | --- | --- |
-| two spatial transformers with idsia-like network (1) | **99.61** |
+| two spatial transformers with idsia-like network (1) | **99.67** |
 | single spatial transformer with idsia-like network (2) | 99.46 |
 | winner of original contest: [idsia network](http://people.idsia.ch/~juergen/nn2012traffic.pdf) | **99.46** |
 | single idsia-like network (3) | 98.85 |
 | human performances ([corresponding paper](http://image.diku.dk/igel/paper/MvCBMLAfTSR.pdf)) | 98.84 |
 
-(1) `luajit main.lua -n -1 --st --net idsia_net.lua --cnn 150,200,300,350 --locnet 200,300,200 --locnet3 150,150,150 -e 14`
+(1) `luajit main.lua -n -1 --st --net idsia_net.lua --cnn 150,200,300,350 --locnet 200,300,200 --locnet3 150,150,150 -e 26`
 
 (2) `luajit main.lua -n -1 --net idsia_net.lua --cnn 200,250,350,400 --st --locnet 200,300,200`
 
