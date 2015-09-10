@@ -8,16 +8,18 @@ local output = io.open(output_path, "w")
 
 output:write("## Results\n")
 output:write("This file contains the results for the tests on the GTSRB dataset.\n\n")
-output:write("| Command line arguments | accuracy on test set |\n")
+output:write("| Command line arguments | accuracy on validation set |\n")
 output:write("| --------------------- | ----- |\n")
 
 print("Running best result with full dataset.")
 local params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'-n -1', {true}})
 bench_utils.run_test(params, output)
 
 print("Running main tests.")
 params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'--cnn ', {false, "38,64,100"}})
 table.insert(params, {'--ms', {false, true}})
 table.insert(params, {'--no_lnorm', {false, true}})
@@ -27,6 +29,7 @@ bench_utils.run_test(params, output)
 
 print("Running idsia net tests.")
 params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'--net ', {'idsia_net.lua'}})
 table.insert(params, {'--cnn ', {"100,150,250,300", "150,200,300,350"}})
 bench_utils.run_test(params, output)

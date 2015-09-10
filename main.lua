@@ -10,6 +10,7 @@ GTSRB Training script
 Main options
   -o,--output   (default "")              Output model
   --eval                                  Only run eval
+  --val                                   Use a validation set instead of the test set
   --script                                Write accuracy on last line of output for benchmarks
   --no_cuda                               Do not use CUDA
   -n            (default 20000)           Use only N samples for training
@@ -52,8 +53,14 @@ if not opt.no_cuda then
 end
 
 print("Loading training data...")
-local train_dataset = gtsrb.dataset.get_train_dataset(opt.n)
-local test_dataset = gtsrb.dataset.get_test_dataset()
+local train_dataset, test_dataset
+if opt.val then
+  -- In this case our variable 'test_dataset' contains the validation set
+  train_dataset, test_dataset = gtsrb.dataset.get_train_dataset(opt.n, true)
+else
+  train_dataset = gtsrb.dataset.get_train_dataset(opt.n)
+  test_dataset = gtsrb.dataset.get_test_dataset()
+end
 
 local mean, std
 if not opt.no_norm then

@@ -17,6 +17,7 @@ dataset.path_remote_test = "http://benchmark.ini.rub.de/Dataset/GTSRB_Final_Test
 dataset.path_remote_test_gt = "http://benchmark.ini.rub.de/Dataset/GTSRB_Final_Test_GT.zip"
 
 dataset.train_dataset_bin = "train_dataset.bin"
+dataset.validation_dataset_bin = "validation_dataset.bin"
 dataset.test_dataset_bin = "test_dataset.bin"
 
 
@@ -24,6 +25,7 @@ dataset.test_dataset_bin = "test_dataset.bin"
 -- binary files containing the dataset as torch tensors.
 function dataset.download_generate_bin()
   if not pl.path.isfile(dataset.train_dataset_bin) or
+     not pl.path.isfile(dataset.validation_dataset_bin) or
      not pl.path.isfile(dataset.test_dataset_bin) then
 
      if not pl.path.isdir('GTSRB') then
@@ -49,12 +51,14 @@ function dataset.download_generate_bin()
     end
 
     print('Generating bin of the dataset')
-    local train_set = generate_dataset('GTSRB/Final_Training/Images')
-    torch.save('train_dataset.bin', train_set)
+    local train_set, validation_set = generate_dataset('GTSRB/Final_Training/Images', true)
+    torch.save(dataset.train_dataset_bin, train_set)
     train_set = nil
+    torch.save(dataset.validation_dataset_bin, validation_set)
+    validation_set = nil
     collectgarbage()
     local test_set = generate_dataset('GTSRB/Final_Test/Images')
-    torch.save('test_dataset.bin', test_set)
+    torch.save(dataset.test_dataset_bin, test_set)
     test_set = nil
     collectgarbage()
 
@@ -70,17 +74,53 @@ end
 
 -- Returns the train dataset
 -- nbr_examples is optional and allows to get only a subset of the training samples
+-- use validation allows to return both a test and validation set (split is done
+-- the same way as the paper from Sermanet adnd LeCun)
 -- Warning: if the number of examples is not limited, the dataset is ordered by class
 -- If the number of examples is limited, the subset will be shuffled.
-function dataset.get_train_dataset(nbr_examples)
+function dataset.get_train_dataset(nbr_examples, use_validation)
   dataset.download_generate_bin()
   local train_dataset = torch.load(dataset.train_dataset_bin)
+  local validation_dataset = torch.load(dataset.validation_dataset_bin)
+
+  if not use_validation then
+    -- Merge both train and validation set to have the full train set
+    local full_train_dataset = {}
+    -- Create the full dataset with the proper size
+    local data_size = train_dataset.data:size()
+    local label_size = train_dataset.label:size()
+    local nbr_train_examples = train_dataset.data:size(1)
+    local nbr_val_examples = validation_dataset.data:size(1)
+    data_size[1] = nbr_train_examples + nbr_val_examples
+    label_size[1] = nbr_train_examples + nbr_val_examples
+    full_train_dataset.data = torch.Tensor(data_size)
+    full_train_dataset.label = torch.Tensor(label_size)
+    -- Copy the data in the full dataset
+    full_train_dataset.data:narrow(1,
+                                  1,nbr_train_examples):copy(
+                                  train_dataset.data)
+    full_train_dataset.data:narrow(1,
+                                  nbr_train_examples+1,
+                                  nbr_val_examples):copy(
+                                  validation_dataset.data)
+    full_train_dataset.label:narrow(1,
+                                  1,nbr_train_examples):copy(
+                                  train_dataset.label)
+    full_train_dataset.label:narrow(1,
+                                  nbr_train_examples+1,
+                                  nbr_val_examples):copy(
+                                  validation_dataset.label)
+    validation_dataset = nil
+    train_dataset = full_train_dataset
+  end
+
 
   -- Limit the number of samples if required by the user
   if nbr_examples and nbr_examples ~= -1 then
     train_dataset = prune_dataset(train_dataset, nbr_examples)
   end
-  return train_dataset
+
+  return train_dataset, validation_dataset
 end
 
 -- Returns the test dataset
@@ -148,11 +188,16 @@ end
 
 -- This will generate a dataset as torch tensor from a directory of images
 -- parent_path is a string of the path containing all the images
-generate_dataset = function(parent_path)
+-- use validation allows to generate a validation set
+generate_dataset = function(parent_path, use_validation)
   assert(parent_path, "A parent path is needed to generate the dataset")
 
   local main_dataset = {}
   main_dataset.nbr_elements = 0
+
+  -- This will only be used if use_validation is true
+  local validation_dataset = {}
+  validation_dataset.nbr_elements = 0
 
   local images_directories = pl.dir.getdirectories(parent_path)
   table.sort(images_directories)
@@ -166,7 +211,25 @@ generate_dataset = function(parent_path)
     local filename_index = csv_content.fieldnames:index('Filename')
     local class_id_index = csv_content.fieldnames:index('ClassId')
 
+    local track_for_validation
+    if use_validation then
+      -- Count number of tracks for this class
+      local max_track_nbr = 0
+      for image_index, image_metadata in ipairs(csv_content) do
+        local track_nbr = tonumber(pl.utils.split(image_metadata[filename_index], '_')[1])
+        if track_nbr > max_track_nbr then
+          max_track_nbr = track_nbr
+        end
+      end
+
+      -- Select one random track for validation
+      track_for_validation = math.floor(math.random()*max_track_nbr) + 1
+    else
+      track_for_validation = -1
+    end
+
     for image_index, image_metadata in ipairs(csv_content) do
+      local track_nbr = tonumber(pl.utils.split(image_metadata[filename_index], '_')[1])
       local image_path = pl.path.join(image_directory, image_metadata[filename_index])
       local image_data = image.load(image_path)
 
@@ -175,8 +238,13 @@ generate_dataset = function(parent_path)
 
       local label = torch.Tensor{image_metadata[class_id_index]+1}
 
-      main_dataset.nbr_elements = main_dataset.nbr_elements + 1
-      main_dataset[main_dataset.nbr_elements] = {image_data, label}
+      if use_validation and track_nbr == track_for_validation then
+        validation_dataset.nbr_elements = validation_dataset.nbr_elements + 1
+        validation_dataset[validation_dataset.nbr_elements] = {image_data, label}
+      else
+        main_dataset.nbr_elements = main_dataset.nbr_elements + 1
+        main_dataset[main_dataset.nbr_elements] = {image_data, label}
+      end
 
       if image_index % 50 == 0 then
         collectgarbage()
@@ -195,7 +263,22 @@ generate_dataset = function(parent_path)
   main_dataset.data = main_data
   main_dataset.label = main_label
 
-  return main_dataset
+  if use_validation then
+    -- Store everything as proper torch Tensor now that we know the total size
+    local validation_data = torch.Tensor(validation_dataset.nbr_elements, 3, 48, 48)
+    local validation_label = torch.Tensor(validation_dataset.nbr_elements, 1)
+    for i,pair in ipairs(validation_dataset) do
+      validation_data[i]:copy(validation_dataset[i][1])
+      validation_label[i]:copy(validation_dataset[i][2])
+    end
+    validation_dataset = {}
+    validation_dataset.data = validation_data
+    validation_dataset.label = validation_label
+
+    return main_dataset, validation_dataset
+  else
+    return main_dataset
+  end
 end
 
 -- Return the module

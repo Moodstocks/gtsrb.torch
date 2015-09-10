@@ -7,7 +7,7 @@ local output = io.open(output_path, "w")
 
 output:write("## Results\n")
 output:write("This file contains the results for the tests on the GTSRB dataset.\n\n")
-output:write("| Command line arguments | accuracy on test set |\n")
+output:write("| Command line arguments | accuracy on validation set |\n")
 output:write("| --------------------- | ----- |\n")
 
 print("Running best result with full dataset.")
@@ -17,6 +17,7 @@ bench_utils.run_test(params, output)
 
 print("Running main tests.")
 params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'--no_lnorm', {false, true}})
 table.insert(params, {'--no_cnorm', {false, true}})
 table.insert(params, {'--st', {true}})
@@ -33,6 +34,7 @@ bench_utils.run_test(params, output)
 
 print("Running extra tests with bigger localization networks.")
 params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'--st', {true}})
 table.insert(params, {'--sca --tra', {false, true}})
 table.insert(params, {'--locnet ', {"141,141,141",
@@ -45,6 +47,7 @@ bench_utils.run_test(params, output)
 
 print("Running tests with multiple spatial transformers")
 params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'--st', {true}})
 table.insert(params, {'--locnet ', {'""',
                                     "150,150,150",
@@ -57,6 +60,7 @@ bench_utils.run_test(params, output)
 
 print("Running test with the idsia network.")
 params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'--net ', {"idsia_net.lua"}})
 table.insert(params, {'--cnn ', {"100,150,250,300", "150,200,300,350"}})
 table.insert(params, {'--st', {true}})
@@ -67,6 +71,7 @@ bench_utils.run_test(params, output)
 
 print("Running tests with multiple spatial transformers on idsia network")
 params = {}
+table.insert(params, {'--val', {true}}) -- run tests on the validation set
 table.insert(params, {'--st', {true}})
 table.insert(params, {'--net ', {"idsia_net.lua"}})
 table.insert(params, {'--cnn ', {"150,200,300,350",

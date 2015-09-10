@@ -4,13 +4,14 @@ The data loader is contained in the `dataset.lua` module.
 This module allows to download and prepare the gtsrb dataset for use with torch.
 
 #### Training dataset
-`dataset.get_train_dataset(nbr_examples)`
+`dataset.get_train_dataset(nbr_examples, use_validation)`
 
 This function returns a Lua table containing two fields:
 * `data` contains a torch tensor of size (nbr_examples x 3 x 48 x 48) containing the train images
 * `label` contains a torch tensor of size (nbr_examples x 1) containing the train labels
 
-If the argument nbr_examples is not specified, it returns the full training dataset containing 39,209 examples.
+If the argument `nbr_examples` is not specified, it returns the full training dataset containing 39,209 examples.
+If the argument `use_validation` is `true`, this function will return two tables, one with the train set and one with the validation set. The split is done following LeCun's [paper](http://yann.lecun.com/exdb/publis/pdf/sermanet-ijcnn-11.pdf) methodology. In this case, the full training set contains 37,919 examples and the validation set contains 1,290 examples.
 
 #### Testing dataset
 `dataset.get_test_dataset(nbr_examples)`
