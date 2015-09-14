@@ -8,13 +8,6 @@ state-of-the-art with a [Spatial Transformer](http://arxiv.org/abs/1506.02025) l
 ### Requirements
 
 * install Torch (see [this guide](http://torch.ch/docs/getting-started.html))
-* install the `getParamsByDevice` branch of torch/nn:
-
-```bash
-git clone https://github.com/torch/nn
-cd nn && git checkout getParamsByDevice && luarocks make rocks/nn-scm-1.rockspec
-```
-
 * (optional) install the [Spatial Transformer](https://github.com/qassemoquab/stnbhwd)
 module:
 
