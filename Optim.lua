@@ -91,7 +91,7 @@ function Optim:__init(model, optState, checkpoint_data)
     -- each parameter tensor. self.modulesToOptState maps each module to
     -- a lua table of optState clones.
     if not checkpoint_data then
-        self.model:for_each(function(module)
+        self.model:apply(function(module)
             self.modulesToOptState[module] = { }
             local params = self.weight_bias_parameters(module)
             -- expects either an empty table or 2 element table, one for weights
@@ -110,7 +110,7 @@ function Optim:__init(model, optState, checkpoint_data)
     else
         local state = checkpoint_data.optim_state
         local modules = {}
-        self.model:for_each(function(m) table.insert(modules, m) end)
+        self.model:apply(function(m) table.insert(modules, m) end)
         assert(pl.tablex.compare_no_order(modules, pl.tablex.keys(state)))
         self.modulesToOptState = state
     end
@@ -136,7 +136,7 @@ local function _type_all(obj, t)
 end
 
 function Optim:type(t)
-    self.model:for_each(function(module)
+    self.model:apply(function(module)
         local state= self.modulesToOptState[module]
         assert(state)
         _type_all(state, t)
