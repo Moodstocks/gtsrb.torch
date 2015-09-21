@@ -74,11 +74,11 @@ function networks.convs_noutput(convs, input_size)
   -- Get the number of channels for conv that are multiscale or not
   local nbr_input_channels = convs[1]:get(1).nInputPlane or
                              convs[1]:get(1):get(1).nInputPlane
-  local output = torch.Tensor(nbr_input_channels, input_size, input_size)
+  local output = torch.Tensor(1,nbr_input_channels, input_size, input_size)
   for _, conv in ipairs(convs) do
     output = conv:forward(output)
   end
-  return output:nElement(), output:size(2)
+  return output:nElement(), output:size(3)
 end
 
 -- Creates a fully connection layer with the specified size.
