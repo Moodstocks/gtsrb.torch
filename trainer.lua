@@ -100,7 +100,7 @@ function trainer.test(dataset)
   local all = 0
 
   -- generate indices and split them into batches
-  local indices = torch.linspace(1,nbr_samples,nbr_samples):long()
+  local indices = torch.range(1,nbr_samples):long()
   indices = indices:split(trainer.batch_size)
 
   -- preallocate input and target tensors
