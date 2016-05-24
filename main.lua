@@ -78,6 +78,9 @@ local network
 if opt.eval then
   if opt.output then
     print('Loading network from '..opt.output)
+    if opt.st then
+      require 'stn'
+    end
     network = torch.load(opt.output)
   else
     error('Must supply the network to use in eval mode')
